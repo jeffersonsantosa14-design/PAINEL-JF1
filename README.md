@@ -2070,7 +2070,7 @@ end
 
 -- ================= NEVAHUB window bootstrap =================
 local Window = NevaLib:MakeWindow({
-    Title = "NEVAHUB",
+    Title = "PAINEL JF",
     SubTitle = "IS BACK",
     SaveFolder = "nevahub.json"
 })
@@ -7531,7 +7531,7 @@ local HopToggle = Tabs.Race:AddToggle({
 
                                     -- Hiển thị thông báo với jobid
                                     Window:Notify({
-                                        Title = "NEVAHUB",
+                                        Title = "PAINEL JF",
                                         Content = "Đã vào server: " .. selected,
                                         Image = "rbxassetid://75841821715476",
                                         Duration = 5
@@ -13305,3 +13305,4 @@ Window:Notify({
   Image = "rbxassetid://75841821715476",
   Duration = 5
 })
+```
