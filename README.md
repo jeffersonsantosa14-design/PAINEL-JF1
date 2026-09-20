@@ -1,758 +1,823 @@
 --========================================================
--- 🔪 MURDER PANEL
--- LOCAL SCRIPT ÚNICO
+-- MURDER PANEL
+-- FLY + INVISIBLE + ESP + TP PLAYER
+-- UM ÚNICO LOCALSCRIPT
+--
+-- COLOQUE EM:
+-- StarterPlayer
+--   > StarterPlayerScripts
+--
 --========================================================
 
 local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
-local LP = Players.LocalPlayer
-local PlayerGui = LP:WaitForChild("PlayerGui")
+local Player = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
 --========================================================
--- LIMPAR PAINEL ANTIGO
+-- CONFIGURAÇÕES
 --========================================================
 
-local old = PlayerGui:FindFirstChild("MurderPanel")
-if old then
-	old:Destroy()
+local FlyAtivo = false
+local InvisibleAtivo = false
+local ESPAtivo = false
+
+local FlySpeed = 60
+
+local Character
+local Humanoid
+local RootPart
+
+local FlyConnection
+local FlyVelocity
+local FlyGyro
+
+local ESPs = {}
+
+local JogadorSelecionado = nil
+
+--========================================================
+-- CHARACTER
+--========================================================
+
+local function AtualizarCharacter()
+	Character = Player.Character or Player.CharacterAdded:Wait()
+	Humanoid = Character:WaitForChild("Humanoid")
+	RootPart = Character:WaitForChild("HumanoidRootPart")
 end
 
---========================================================
--- CONFIG
---========================================================
+AtualizarCharacter()
 
-local Fly = false
-local Invis = false
-local ESP = false
-local Speed = 70
+Player.CharacterAdded:Connect(function()
+	task.wait(1)
 
-local SelectedPlayer = nil
-local LocalRole = "Inocente"
+	AtualizarCharacter()
 
-local ESPData = {}
+	if InvisibleAtivo then
+		task.wait(0.2)
 
---========================================================
--- GUI
---========================================================
+		for _, obj in ipairs(Character:GetDescendants()) do
+			if obj:IsA("BasePart") then
+				obj.LocalTransparencyModifier = 1
 
-local Gui = Instance.new("ScreenGui")
-Gui.Name = "MurderPanel"
-Gui.ResetOnSpawn = false
-Gui.IgnoreGuiInset = true
-Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-Gui.Parent = PlayerGui
-
---========================================================
--- FUNÇÕES GUI
---========================================================
-
-local function Corner(obj, radius)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, radius or 7)
-	c.Parent = obj
-end
-
-local function Button(parent, text, size, position)
-	local b = Instance.new("TextButton")
-
-	b.Size = size
-	b.Position = position
-
-	b.BackgroundColor3 = Color3.fromRGB(45,45,50)
-	b.BorderSizePixel = 0
-
-	b.Text = text
-	b.TextColor3 = Color3.fromRGB(255,255,255)
-	b.TextSize = 13
-	b.Font = Enum.Font.GothamBold
-
-	b.AutoButtonColor = true
-
-	b.Parent = parent
-
-	Corner(b)
-
-	return b
-end
-
-local function SetButton(button, name, state)
-	if state then
-		button.Text = name .. ": LIGADO"
-		button.BackgroundColor3 = Color3.fromRGB(40,140,65)
-	else
-		button.Text = name .. ": DESLIGADO"
-		button.BackgroundColor3 = Color3.fromRGB(45,45,50)
+			elseif obj:IsA("Decal") then
+				obj.Transparency = 1
+			end
+		end
 	end
-end
+end)
 
 --========================================================
--- BOTÃO ABRIR
+-- GUI PRINCIPAL
 --========================================================
 
-local OpenButton = Button(
-	Gui,
-	"☰",
-	UDim2.fromOffset(45,45),
-	UDim2.new(0,15,0.5,-22)
-)
-
-OpenButton.Visible = false
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MurderPanel"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 
 --========================================================
 -- PAINEL
 --========================================================
 
 local Main = Instance.new("Frame")
-
-Main.Size = UDim2.fromOffset(700,540)
-Main.Position = UDim2.new(0.5,-350,0.5,-270)
-
-Main.BackgroundColor3 = Color3.fromRGB(27,27,31)
+Main.Name = "Main"
+Main.Size = UDim2.new(0, 420, 0, 430)
+Main.Position = UDim2.new(0.5, -210, 0.5, -215)
+Main.BackgroundColor3 = Color3.fromRGB(23, 23, 23)
 Main.BorderSizePixel = 0
+Main.Parent = ScreenGui
 
-Main.Active = true
-Main.Parent = Gui
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = Main
 
-Corner(Main,10)
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(70, 70, 70)
+MainStroke.Thickness = 2
+MainStroke.Parent = Main
 
 --========================================================
--- CABEÇALHO
+-- TÍTULO
 --========================================================
-
-local Header = Instance.new("Frame")
-
-Header.Size = UDim2.new(1,0,0,50)
-
-Header.BackgroundColor3 = Color3.fromRGB(17,17,20)
-Header.BorderSizePixel = 0
-
-Header.Active = true
-Header.Parent = Main
-
-Corner(Header,10)
 
 local Title = Instance.new("TextLabel")
-
-Title.Size = UDim2.new(1,-65,1,0)
-Title.Position = UDim2.fromOffset(15,0)
-
+Title.Name = "Title"
+Title.Size = UDim2.new(1, -50, 0, 45)
+Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-
-Title.Text = "🔪 MURDER PANEL"
-Title.TextColor3 = Color3.fromRGB(255,255,255)
-Title.TextSize = 18
+Title.Text = "☠  MURDER PANEL"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 22
 Title.Font = Enum.Font.GothamBold
-
 Title.TextXAlignment = Enum.TextXAlignment.Left
-
-Title.Parent = Header
-
-local Close = Button(
-	Header,
-	"X",
-	UDim2.fromOffset(38,36),
-	UDim2.new(1,-45,0,7)
-)
+Title.Parent = Main
 
 --========================================================
--- ARRASTAR PAINEL
+-- FECHAR
 --========================================================
 
-local Dragging = false
-local DragStart
-local StartPosition
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.new(0, 32, 0, 32)
+Close.Position = UDim2.new(1, -40, 0, 7)
+Close.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
+Close.Text = "X"
+Close.TextColor3 = Color3.fromRGB(255, 255, 255)
+Close.TextSize = 16
+Close.Font = Enum.Font.GothamBold
+Close.Parent = Main
 
-local function StartDrag(input)
-	Dragging = true
-	DragStart = input.Position
-	StartPosition = Main.Position
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 7)
+CloseCorner.Parent = Close
+
+--========================================================
+-- BOTÃO ABRIR
+--========================================================
+
+local OpenButton = Instance.new("TextButton")
+OpenButton.Size = UDim2.new(0, 55, 0, 55)
+OpenButton.Position = UDim2.new(0, 15, 0.5, -27)
+OpenButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+OpenButton.Text = "☠"
+OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenButton.TextSize = 24
+OpenButton.Font = Enum.Font.GothamBold
+OpenButton.Visible = false
+OpenButton.Parent = ScreenGui
+
+local OpenCorner = Instance.new("UICorner")
+OpenCorner.CornerRadius = UDim.new(1, 0)
+OpenCorner.Parent = OpenButton
+
+Close.MouseButton1Click:Connect(function()
+	Main.Visible = false
+	OpenButton.Visible = true
+end)
+
+OpenButton.MouseButton1Click:Connect(function()
+	Main.Visible = true
+	OpenButton.Visible = false
+end)
+
+--========================================================
+-- SISTEMA DE ABAS
+--========================================================
+
+local TabArea = Instance.new("Frame")
+TabArea.Size = UDim2.new(1, -20, 0, 40)
+TabArea.Position = UDim2.new(0, 10, 0, 48)
+TabArea.BackgroundTransparency = 1
+TabArea.Parent = Main
+
+local function CriarAba(Texto, Posicao)
+	local Button = Instance.new("TextButton")
+
+	Button.Size = UDim2.new(0, 125, 1, 0)
+	Button.Position = Posicao
+
+	Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	Button.Text = Texto
+	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Button.TextSize = 15
+	Button.Font = Enum.Font.GothamBold
+
+	Button.Parent = TabArea
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 7)
+	Corner.Parent = Button
+
+	return Button
 end
 
-local function UpdateDrag(input)
-
-	if not Dragging then
-		return
-	end
-
-	local Delta = input.Position - DragStart
-
-	Main.Position = UDim2.new(
-		StartPosition.X.Scale,
-		StartPosition.X.Offset + Delta.X,
-
-		StartPosition.Y.Scale,
-		StartPosition.Y.Offset + Delta.Y
-	)
-end
-
-Header.InputBegan:Connect(function(input)
-
-	if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
-
-		StartDrag(input)
-
-	end
-
-end)
-
-UIS.InputChanged:Connect(function(input)
-
-	if input.UserInputType == Enum.UserInputType.MouseMovement
-		or input.UserInputType == Enum.UserInputType.Touch then
-
-		UpdateDrag(input)
-
-	end
-
-end)
-
-UIS.InputEnded:Connect(function(input)
-
-	if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
-
-		Dragging = false
-
-	end
-
-end)
-
---========================================================
--- ABAS
---========================================================
-
-local Tabs = Instance.new("Frame")
-
-Tabs.Size = UDim2.new(1,-20,0,42)
-Tabs.Position = UDim2.fromOffset(10,60)
-
-Tabs.BackgroundTransparency = 1
-Tabs.Parent = Main
-
-local FunctionsTab = Button(
-	Tabs,
+local MainTab = CriarAba(
 	"⚙ FUNÇÕES",
-	UDim2.fromOffset(150,40),
-	UDim2.fromOffset(0,0)
+	UDim2.new(0, 0, 0, 0)
 )
 
-local PlayersTab = Button(
-	Tabs,
-	"👤 PLAYERS",
-	UDim2.fromOffset(150,40),
-	UDim2.fromOffset(160,0)
-)
-
-local InvestigateTab = Button(
-	Tabs,
-	"🔍 INVESTIGAR",
-	UDim2.fromOffset(150,40),
-	UDim2.fromOffset(320,0)
+local TPTab = CriarAba(
+	"👤 TP PLAYER",
+	UDim2.new(0, 135, 0, 0)
 )
 
 --========================================================
--- CONTEÚDO
+-- PÁGINA FUNÇÕES
 --========================================================
 
-local Content = Instance.new("Frame")
-
-Content.Size = UDim2.new(1,-20,1,-115)
-Content.Position = UDim2.fromOffset(10,110)
-
-Content.BackgroundTransparency = 1
-Content.Parent = Main
-
---========================================================
--- ABA FUNÇÕES
---========================================================
-
-local Functions = Instance.new("Frame")
-
-Functions.Size = UDim2.fromScale(1,1)
-Functions.BackgroundTransparency = 1
-Functions.Parent = Content
-
-local FlyButton = Button(
-	Functions,
-	"✈ FLY: DESLIGADO",
-	UDim2.fromOffset(205,45),
-	UDim2.fromOffset(10,10)
-)
-
-local InvisButton = Button(
-	Functions,
-	"👻 INVISÍVEL: DESLIGADO",
-	UDim2.fromOffset(205,45),
-	UDim2.fromOffset(225,10)
-)
-
-local ESPButton = Button(
-	Functions,
-	"👁 ESP: DESLIGADO",
-	UDim2.fromOffset(205,45),
-	UDim2.fromOffset(440,10)
-)
-
-local Help = Instance.new("TextLabel")
-
-Help.Size = UDim2.new(1,-20,0,150)
-Help.Position = UDim2.fromOffset(10,75)
-
-Help.BackgroundTransparency = 1
-
-Help.Text =
-	"✈ FLY\n" ..
-	"WASD = mover\n" ..
-	"ESPAÇO = subir\n" ..
-	"CTRL = descer\n\n" ..
-	"👻 Invisibilidade local\n" ..
-	"👁 ESP dos jogadores"
-
-Help.TextColor3 = Color3.fromRGB(190,190,190)
-Help.TextSize = 14
-Help.Font = Enum.Font.Gotham
-
-Help.TextXAlignment = Enum.TextXAlignment.Left
-Help.TextYAlignment = Enum.TextYAlignment.Top
-
-Help.Parent = Functions
+local FuncoesPage = Instance.new("Frame")
+FuncoesPage.Name = "FuncoesPage"
+FuncoesPage.Size = UDim2.new(1, -20, 1, -100)
+FuncoesPage.Position = UDim2.new(0, 10, 0, 95)
+FuncoesPage.BackgroundTransparency = 1
+FuncoesPage.Parent = Main
 
 --========================================================
--- ABA PLAYERS
+-- BOTÕES DE FUNÇÃO
 --========================================================
 
-local PlayersFrame = Instance.new("Frame")
+local function CriarBotao(Nome, Posicao)
+	local Button = Instance.new("TextButton")
 
-PlayersFrame.Size = UDim2.fromScale(1,1)
-PlayersFrame.BackgroundTransparency = 1
-PlayersFrame.Visible = false
-PlayersFrame.Parent = Content
+	Button.Size = UDim2.new(1, 0, 0, 55)
+	Button.Position = Posicao
 
-local SearchPlayers = Instance.new("TextBox")
+	Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	Button.BorderSizePixel = 0
 
-SearchPlayers.Size = UDim2.new(1,-20,0,40)
-SearchPlayers.Position = UDim2.fromOffset(10,5)
+	Button.Text = Nome .. "  [OFF]"
+	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Button.TextSize = 17
+	Button.Font = Enum.Font.GothamBold
 
-SearchPlayers.BackgroundColor3 = Color3.fromRGB(38,38,43)
-SearchPlayers.BorderSizePixel = 0
+	Button.Parent = FuncoesPage
 
-SearchPlayers.PlaceholderText = "🔎 Pesquisar jogador..."
-SearchPlayers.PlaceholderColor3 = Color3.fromRGB(150,150,150)
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 7)
+	Corner.Parent = Button
 
-SearchPlayers.Text = ""
-SearchPlayers.TextColor3 = Color3.fromRGB(255,255,255)
-SearchPlayers.TextSize = 14
-SearchPlayers.Font = Enum.Font.Gotham
-
-SearchPlayers.Parent = PlayersFrame
-
-Corner(SearchPlayers)
-
-local PlayerList = Instance.new("ScrollingFrame")
-
-PlayerList.Size = UDim2.new(1,-20,0,280)
-PlayerList.Position = UDim2.fromOffset(10,55)
-
-PlayerList.BackgroundColor3 = Color3.fromRGB(20,20,23)
-PlayerList.BorderSizePixel = 0
-
-PlayerList.ScrollBarThickness = 5
-PlayerList.CanvasSize = UDim2.new()
-
-PlayerList.Parent = PlayersFrame
-
-Corner(PlayerList)
-
-local PlayerLayout = Instance.new("UIListLayout")
-
-PlayerLayout.Padding = UDim.new(0,4)
-PlayerLayout.Parent = PlayerList
-
-local TPButton = Button(
-	PlayersFrame,
-	"📍 IR ATÉ O PLAYER",
-	UDim2.new(0.48,-5,0,45),
-	UDim2.new(0,10,1,-55)
-)
-
-local PullButton = Button(
-	PlayersFrame,
-	"🧲 PUXAR PLAYER",
-	UDim2.new(0.48,-5,0,45),
-	UDim2.new(0.52,0,1,-55)
-)
-
---========================================================
--- ABA INVESTIGAR
---========================================================
-
-local Investigate = Instance.new("Frame")
-
-Investigate.Size = UDim2.fromScale(1,1)
-Investigate.BackgroundTransparency = 1
-Investigate.Visible = false
-Investigate.Parent = Content
-
-local SearchInvestigate = Instance.new("TextBox")
-
-SearchInvestigate.Size = UDim2.new(0.42,-10,0,40)
-SearchInvestigate.Position = UDim2.fromOffset(10,5)
-
-SearchInvestigate.BackgroundColor3 = Color3.fromRGB(38,38,43)
-SearchInvestigate.BorderSizePixel = 0
-
-SearchInvestigate.PlaceholderText = "🔎 Pesquisar jogador..."
-SearchInvestigate.PlaceholderColor3 = Color3.fromRGB(150,150,150)
-
-SearchInvestigate.Text = ""
-SearchInvestigate.TextColor3 = Color3.fromRGB(255,255,255)
-SearchInvestigate.TextSize = 14
-SearchInvestigate.Font = Enum.Font.Gotham
-
-SearchInvestigate.Parent = Investigate
-
-Corner(SearchInvestigate)
-
-local InvestigateList = Instance.new("ScrollingFrame")
-
-InvestigateList.Size = UDim2.new(0.42,-10,0,235)
-InvestigateList.Position = UDim2.fromOffset(10,55)
-
-InvestigateList.BackgroundColor3 = Color3.fromRGB(20,20,23)
-InvestigateList.BorderSizePixel = 0
-
-InvestigateList.ScrollBarThickness = 5
-InvestigateList.CanvasSize = UDim2.new()
-
-InvestigateList.Parent = Investigate
-
-Corner(InvestigateList)
-
-local InvestigateLayout = Instance.new("UIListLayout")
-
-InvestigateLayout.Padding = UDim.new(0,4)
-InvestigateLayout.Parent = InvestigateList
-
-local Result = Instance.new("Frame")
-
-Result.Size = UDim2.new(0.58,-10,0,235)
-Result.Position = UDim2.new(0.42,0,0,55)
-
-Result.BackgroundColor3 = Color3.fromRGB(21,21,25)
-Result.BorderSizePixel = 0
-
-Result.Parent = Investigate
-
-Corner(Result)
-
-local ResultText = Instance.new("TextLabel")
-
-ResultText.Size = UDim2.new(1,-20,1,-20)
-ResultText.Position = UDim2.fromOffset(10,10)
-
-ResultText.BackgroundTransparency = 1
-
-ResultText.Text = "🔍\n\nSelecione um jogador."
-
-ResultText.TextColor3 = Color3.fromRGB(235,235,235)
-ResultText.TextSize = 14
-ResultText.Font = Enum.Font.Gotham
-
-ResultText.TextWrapped = true
-ResultText.TextXAlignment = Enum.TextXAlignment.Left
-ResultText.TextYAlignment = Enum.TextYAlignment.Top
-
-ResultText.Parent = Result
-
-local RefreshItems = Button(
-	Investigate,
-	"🔄 ATUALIZAR ITENS",
-	UDim2.new(0.42,-10,0,40),
-	UDim2.fromOffset(10,300)
-)
-
-local RandomRole = Button(
-	Investigate,
-	"🎲 SORTEAR",
-	UDim2.new(0.27,-5,0,40),
-	UDim2.new(0.42,0,0,300)
-)
-
-local AssassinRole = Button(
-	Investigate,
-	"🗡 ASSASSINO",
-	UDim2.new(0.27,-5,0,40),
-	UDim2.new(0.71,0,0,300)
-)
-
-local SheriffRole = Button(
-	Investigate,
-	"🔫 XERIFE",
-	UDim2.new(0.27,-5,0,40),
-	UDim2.new(0.42,0,0,350)
-)
-
-local InnocentRole = Button(
-	Investigate,
-	"👤 INOCENTE",
-	UDim2.new(0.27,-5,0,40),
-	UDim2.new(0.71,0,0,350)
-)
-
---========================================================
--- LISTAS
---========================================================
-
-local function ClearList(list)
-
-	for _,obj in ipairs(list:GetChildren()) do
-
-		if obj:IsA("TextButton") then
-			obj:Destroy()
-		end
-
-	end
-
+	return Button
 end
 
-local function MatchPlayer(player,text)
+local FlyButton = CriarBotao(
+	"✈️ FLY",
+	UDim2.new(0, 0, 0, 10)
+)
 
-	if text == "" then
-		return true
-	end
+local InvisibleButton = CriarBotao(
+	"👻 INVISIBLE",
+	UDim2.new(0, 0, 0, 75)
+)
 
-	text = string.lower(text)
-
-	return
-		string.find(string.lower(player.Name),text,1,true)
-		or
-		string.find(string.lower(player.DisplayName),text,1,true)
-
-end
-
-local function SelectPlayer(player,list)
-
-	SelectedPlayer = player
-
-	for _,obj in ipairs(list:GetChildren()) do
-
-		if obj:IsA("TextButton") then
-
-			if obj:GetAttribute("PlayerName") == player.Name then
-				obj.BackgroundColor3 = Color3.fromRGB(40,140,65)
-			else
-				obj.BackgroundColor3 = Color3.fromRGB(45,45,50)
-			end
-
-		end
-
-	end
-
-	if list == InvestigateList then
-		InvestigatePlayer()
-	end
-
-end
-
-local function CreatePlayerButton(player,list)
-
-	local b = Button(
-		list,
-		player.DisplayName .. "  @" .. player.Name,
-		UDim2.new(1,-10,0,36),
-		UDim2.new()
-	)
-
-	b:SetAttribute("PlayerName",player.Name)
-
-	if player == SelectedPlayer then
-		b.BackgroundColor3 = Color3.fromRGB(40,140,65)
-	end
-
-	b.MouseButton1Click:Connect(function()
-		SelectPlayer(player,list)
-	end)
-
-end
-
-local function UpdatePlayerList()
-
-	ClearList(PlayerList)
-
-	local search = SearchPlayers.Text
-
-	for _,player in ipairs(Players:GetPlayers()) do
-
-		if player ~= LP and MatchPlayer(player,search) then
-			CreatePlayerButton(player,PlayerList)
-		end
-
-	end
-
-	task.wait()
-
-	PlayerList.CanvasSize =
-		UDim2.fromOffset(0,PlayerLayout.AbsoluteContentSize.Y + 10)
-
-end
-
-local function UpdateInvestigateList()
-
-	ClearList(InvestigateList)
-
-	local search = SearchInvestigate.Text
-
-	for _,player in ipairs(Players:GetPlayers()) do
-
-		if MatchPlayer(player,search) then
-			CreatePlayerButton(player,InvestigateList)
-		end
-
-	end
-
-	task.wait()
-
-	InvestigateList.CanvasSize =
-		UDim2.fromOffset(
-			0,
-			InvestigateLayout.AbsoluteContentSize.Y + 10
-		)
-
-end
+local ESPButton = CriarBotao(
+	"👁 ESP",
+	UDim2.new(0, 0, 0, 140)
+)
 
 --========================================================
--- INVESTIGAÇÃO
+-- FLY
 --========================================================
 
-function InvestigatePlayer()
+local function PararFly()
 
-	if not SelectedPlayer then
+	FlyAtivo = false
 
-		ResultText.Text =
-			"🔍\n\nSelecione um jogador."
+	if FlyConnection then
+		FlyConnection:Disconnect()
+		FlyConnection = nil
+	end
 
+	if FlyVelocity then
+		FlyVelocity:Destroy()
+		FlyVelocity = nil
+	end
+
+	if FlyGyro then
+		FlyGyro:Destroy()
+		FlyGyro = nil
+	end
+
+	if Humanoid then
+		Humanoid.PlatformStand = false
+	end
+
+	FlyButton.Text = "✈️ FLY  [OFF]"
+	FlyButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+end
+
+local function IniciarFly()
+
+	if not Character or not RootPart or not Humanoid then
 		return
-
 	end
 
-	local tools = {}
-	local count = {}
+	FlyAtivo = true
 
-	local function ReadTools(container)
+	Humanoid.PlatformStand = true
 
-		if not container then
+	FlyVelocity = Instance.new("BodyVelocity")
+	FlyVelocity.Name = "JF_FlyVelocity"
+	FlyVelocity.MaxForce = Vector3.new(
+		math.huge,
+		math.huge,
+		math.huge
+	)
+	FlyVelocity.Velocity = Vector3.zero
+	FlyVelocity.Parent = RootPart
+
+	FlyGyro = Instance.new("BodyGyro")
+	FlyGyro.Name = "JF_FlyGyro"
+	FlyGyro.MaxTorque = Vector3.new(
+		math.huge,
+		math.huge,
+		math.huge
+	)
+	FlyGyro.P = 50000
+	FlyGyro.Parent = RootPart
+
+	FlyButton.Text = "✈️ FLY  [ON]"
+	FlyButton.BackgroundColor3 = Color3.fromRGB(0, 130, 70)
+
+	FlyConnection = RunService.RenderStepped:Connect(function()
+
+		if not FlyAtivo then
 			return
 		end
 
-		for _,obj in ipairs(container:GetChildren()) do
-
-			if obj:IsA("Tool") then
-
-				count[obj.Name] =
-					(count[obj.Name] or 0) + 1
-
-			end
-
+		if not RootPart or not RootPart.Parent then
+			return
 		end
 
-	end
+		local Direction = Vector3.zero
 
-	ReadTools(SelectedPlayer:FindFirstChild("Backpack"))
-	ReadTools(SelectedPlayer.Character)
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+			Direction += Camera.CFrame.LookVector
+		end
 
-	for name,amount in pairs(count) do
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+			Direction -= Camera.CFrame.LookVector
+		end
 
-		table.insert(
-			tools,
-			{
-				Name = name,
-				Amount = amount
-			}
-		)
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+			Direction += Camera.CFrame.RightVector
+		end
 
-	end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+			Direction -= Camera.CFrame.RightVector
+		end
 
-	table.sort(tools,function(a,b)
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+			Direction += Vector3.new(0, 1, 0)
+		end
 
-		return string.lower(a.Name)
-			<
-			string.lower(b.Name)
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+			Direction -= Vector3.new(0, 1, 0)
+		end
 
+		if Direction.Magnitude > 0 then
+			Direction = Direction.Unit
+		end
+
+		FlyVelocity.Velocity = Direction * FlySpeed
+		FlyGyro.CFrame = Camera.CFrame
 	end)
+end
 
-	local detected = "NÃO IDENTIFICADO"
+FlyButton.MouseButton1Click:Connect(function()
 
-	for _,tool in ipairs(tools) do
+	if FlyAtivo then
+		PararFly()
+	else
+		IniciarFly()
+	end
+end)
 
-		local name =
-			string.lower(
-				string.gsub(tool.Name,"%s+","")
-			)
+UserInputService.InputBegan:Connect(function(Input, Processed)
 
-		if
-			name == "knife"
-			or name == "faca"
-			or name == "murderknife"
-			or name == "assassin"
-			or name == "dagger"
-		then
-
-			detected = "ASSASSINO"
-
-		elseif
-			name == "gun"
-			or name == "pistol"
-			or name == "sheriff"
-			or name == "sheriffgun"
-			or name == "revolver"
-			or name == "arma"
-		then
-
-			detected = "XERIFE"
-
-		end
-
+	if Processed then
+		return
 	end
 
-	local text =
-		"👤 " ..
-		SelectedPlayer.DisplayName ..
-		"\n@" ..
-		SelectedPlayer.Name ..
-		"\n\n" ..
+	if Input.KeyCode == Enum.KeyCode.F then
 
-		"🔎 POSSÍVEL ROLE: " ..
-		detected ..
-		"\n\n" ..
+		if FlyAtivo then
+			PararFly()
+		else
+			IniciarFly()
+		end
+	end
+end)
 
-		"🎒 ITENS:\n"
+--========================================================
+-- INVISIBLE
+--========================================================
 
-	if #tools == 0 then
+local function AplicarInvisible()
 
-		text = text ..
-			"Nenhuma Tool encontrada."
+	if not Character then
+		return
+	end
+
+	for _, obj in ipairs(Character:GetDescendants()) do
+
+		if obj:IsA("BasePart") then
+			obj.LocalTransparencyModifier = 1
+
+		elseif obj:IsA("Decal") then
+			obj.Transparency = 1
+
+		elseif obj:IsA("ParticleEmitter") then
+			obj.Enabled = false
+
+		elseif obj:IsA("Trail") then
+			obj.Enabled = false
+		end
+	end
+end
+
+local function RemoverInvisible()
+
+	if not Character then
+		return
+	end
+
+	for _, obj in ipairs(Character:GetDescendants()) do
+
+		if obj:IsA("BasePart") then
+			obj.LocalTransparencyModifier = 0
+
+		elseif obj:IsA("Decal") then
+			obj.Transparency = 0
+
+		elseif obj:IsA("ParticleEmitter") then
+			obj.Enabled = true
+
+		elseif obj:IsA("Trail") then
+			obj.Enabled = true
+		end
+	end
+end
+
+InvisibleButton.MouseButton1Click:Connect(function()
+
+	InvisibleAtivo = not InvisibleAtivo
+
+	if InvisibleAtivo then
+
+		AplicarInvisible()
+
+		InvisibleButton.Text = "👻 INVISIBLE  [ON]"
+		InvisibleButton.BackgroundColor3 =
+			Color3.fromRGB(0, 130, 70)
 
 	else
 
-		for _,tool in ipairs(tools) do
+		RemoverInvisible()
 
-			text = text ..
-				"• " ..
-				tool.Name ..
-				" x" ..
-				tool.Amount ..
-				"\n"
+		InvisibleButton.Text = "👻 INVISIBLE  [OFF]"
+		InvisibleButton.BackgroundColor3 =
+			Color3.fromRGB(40, 40, 40)
+	end
+end)
 
+--========================================================
+-- ESP
+--========================================================
+
+local function RemoverESP(PlayerAlvo)
+
+	if ESPs[PlayerAlvo] then
+
+		if ESPs[PlayerAlvo].Highlight then
+			ESPs[PlayerAlvo].Highlight:Destroy()
 		end
 
+		if ESPs[PlayerAlvo].Billboard then
+			ESPs[PlayerAlvo].Billboard:Destroy()
+		end
+
+		ESPs[PlayerAlvo] = nil
+	end
+end
+
+local function CriarESP(PlayerAlvo)
+
+	if PlayerAlvo == Player then
+		return
 	end
 
-	ResultText.Text = text
+	if not PlayerAlvo.Character then
+		return
+	end
 
+	local Char = PlayerAlvo.Character
+	local Root = Char:FindFirstChild("HumanoidRootPart")
+
+	if not Root then
+		return
+	end
+
+	RemoverESP(PlayerAlvo)
+
+	local Highlight = Instance.new("Highlight")
+	Highlight.Name = "JF_ESP"
+	Highlight.FillTransparency = 0.65
+	Highlight.OutlineTransparency = 0
+	Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	Highlight.Parent = Char
+
+	local Billboard = Instance.new("BillboardGui")
+	Billboard.Name = "JF_ESP_Nome"
+	Billboard.Size = UDim2.new(0, 170, 0, 35)
+	Billboard.StudsOffset = Vector3.new(0, 3, 0)
+	Billboard.AlwaysOnTop = true
+	Billboard.Parent = Root
+
+	local Text = Instance.new("TextLabel")
+	Text.Size = UDim2.new(1, 0, 1, 0)
+	Text.BackgroundTransparency = 1
+	Text.Text = PlayerAlvo.DisplayName
+	Text.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Text.TextStrokeTransparency = 0
+	Text.TextSize = 14
+	Text.Font = Enum.Font.GothamBold
+	Text.Parent = Billboard
+
+	ESPs[PlayerAlvo] = {
+		Highlight = Highlight,
+		Billboard = Billboard
+	}
 end
+
+local function AtualizarESP()
+
+	for _, PlayerAlvo in ipairs(Players:GetPlayers()) do
+
+		if PlayerAlvo ~= Player then
+
+			if PlayerAlvo.Character then
+				CriarESP(PlayerAlvo)
+			end
+		end
+	end
+end
+
+ESPButton.MouseButton1Click:Connect(function()
+
+	ESPAtivo = not ESPAtivo
+
+	if ESPAtivo then
+
+		ESPButton.Text = "👁 ESP  [ON]"
+		ESPButton.BackgroundColor3 =
+			Color3.fromRGB(0, 130, 70)
+
+		AtualizarESP()
+
+	else
+
+		ESPButton.Text = "👁 ESP  [OFF]"
+		ESPButton.BackgroundColor3 =
+			Color3.fromRGB(40, 40, 40)
+
+		for PlayerAlvo in pairs(ESPs) do
+			RemoverESP(PlayerAlvo)
+		end
+	end
+end)
+
+Players.PlayerAdded:Connect(function(PlayerAlvo)
+
+	PlayerAlvo.CharacterAdded:Connect(function()
+
+		task.wait(0.5)
+
+		if ESPAtivo then
+			CriarESP(PlayerAlvo)
+		end
+	end)
+end)
+
+Players.PlayerRemoving:Connect(function(PlayerAlvo)
+	RemoverESP(PlayerAlvo)
+end)
+
+--========================================================
+-- PÁGINA TP PLAYER
+--========================================================
+
+local TPPage = Instance.new("Frame")
+TPPage.Name = "TPPage"
+TPPage.Size = UDim2.new(1, -20, 1, -100)
+TPPage.Position = UDim2.new(0, 10, 0, 95)
+TPPage.BackgroundTransparency = 1
+TPPage.Visible = false
+TPPage.Parent = Main
+
+--========================================================
+-- PESQUISA
+--========================================================
+
+local SearchBox = Instance.new("TextBox")
+SearchBox.Name = "Pesquisa"
+SearchBox.Size = UDim2.new(1, 0, 0, 42)
+SearchBox.Position = UDim2.new(0, 0, 0, 0)
+
+SearchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SearchBox.BorderSizePixel = 0
+
+SearchBox.PlaceholderText = "🔎 Pesquisar jogador..."
+SearchBox.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
+
+SearchBox.Text = ""
+SearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SearchBox.TextSize = 15
+SearchBox.Font = Enum.Font.Gotham
+
+SearchBox.ClearTextOnFocus = false
+SearchBox.Parent = TPPage
+
+local SearchCorner = Instance.new("UICorner")
+SearchCorner.CornerRadius = UDim.new(0, 7)
+SearchCorner.Parent = SearchBox
+
+--========================================================
+-- JOGADOR SELECIONADO
+--========================================================
+
+local SelectedLabel = Instance.new("TextLabel")
+SelectedLabel.Size = UDim2.new(1, 0, 0, 30)
+SelectedLabel.Position = UDim2.new(0, 0, 0, 48)
+SelectedLabel.BackgroundTransparency = 1
+SelectedLabel.Text = "Nenhum jogador selecionado"
+SelectedLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
+SelectedLabel.TextSize = 14
+SelectedLabel.Font = Enum.Font.Gotham
+SelectedLabel.TextXAlignment = Enum.TextXAlignment.Left
+SelectedLabel.Parent = TPPage
+
+--========================================================
+-- LISTA
+--========================================================
+
+local PlayerList = Instance.new("ScrollingFrame")
+PlayerList.Name = "PlayerList"
+PlayerList.Size = UDim2.new(1, 0, 1, -145)
+PlayerList.Position = UDim2.new(0, 0, 0, 82)
+
+PlayerList.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+PlayerList.BorderSizePixel = 0
+
+PlayerList.ScrollBarThickness = 5
+PlayerList.CanvasSize = UDim2.new(0, 0, 0, 0)
+PlayerList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+PlayerList.Parent = TPPage
+
+local ListCorner = Instance.new("UICorner")
+ListCorner.CornerRadius = UDim.new(0, 7)
+ListCorner.Parent = PlayerList
+
+local ListLayout = Instance.new("UIListLayout")
+ListLayout.Padding = UDim.new(0, 5)
+ListLayout.SortOrder = Enum.SortOrder.Name
+ListLayout.Parent = PlayerList
+
+local ListPadding = Instance.new("UIPadding")
+ListPadding.PaddingTop = UDim.new(0, 6)
+ListPadding.PaddingBottom = UDim.new(0, 6)
+ListPadding.PaddingLeft = UDim.new(0, 6)
+ListPadding.PaddingRight = UDim.new(0, 6)
+ListPadding.Parent = PlayerList
+
+--========================================================
+-- BOTÃO TP
+--========================================================
+
+local TPButton = Instance.new("TextButton")
+TPButton.Name = "TPButton"
+TPButton.Size = UDim2.new(1, 0, 0, 50)
+TPButton.Position = UDim2.new(0, 0, 1, -55)
+
+TPButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+TPButton.BorderSizePixel = 0
+
+TPButton.Text = "📍 DAR TP NO JOGADOR"
+TPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+TPButton.TextSize = 16
+TPButton.Font = Enum.Font.GothamBold
+
+TPButton.Parent = TPPage
+
+local TPCorner = Instance.new("UICorner")
+TPCorner.CornerRadius = UDim.new(0, 7)
+TPCorner.Parent = TPButton
+
+--========================================================
+-- CRIAR BOTÃO DO PLAYER
+--========================================================
+
+local function CriarPlayerButton(PlayerAlvo)
+
+	local Button = Instance.new("TextButton")
+
+	Button.Name = PlayerAlvo.Name
+	Button.Size = UDim2.new(1, -2, 0, 42)
+
+	Button.BackgroundColor3 = Color3.fromRGB(42, 42, 42)
+	Button.BorderSizePixel = 0
+
+	Button.Text =
+		PlayerAlvo.DisplayName ..
+		"  @" ..
+		PlayerAlvo.Name
+
+	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Button.TextSize = 14
+	Button.Font = Enum.Font.Gotham
+
+	Button.Parent = PlayerList
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 6)
+	Corner.Parent = Button
+
+	Button.MouseButton1Click:Connect(function()
+
+		JogadorSelecionado = PlayerAlvo
+
+		SelectedLabel.Text =
+			"Selecionado: " ..
+			PlayerAlvo.DisplayName ..
+			"  (@" ..
+			PlayerAlvo.Name ..
+			")"
+
+		for _, Outro in ipairs(PlayerList:GetChildren()) do
+
+			if Outro:IsA("TextButton") then
+				Outro.BackgroundColor3 =
+					Color3.fromRGB(42, 42, 42)
+			end
+		end
+
+		Button.BackgroundColor3 =
+			Color3.fromRGB(0, 130, 70)
+	end)
+end
+
+--========================================================
+-- ATUALIZAR LISTA
+--========================================================
+
+local function AtualizarLista()
+
+	for _, Obj in ipairs(PlayerList:GetChildren()) do
+
+		if Obj:IsA("TextButton") then
+			Obj:Destroy()
+		end
+	end
+
+	local Pesquisa = string.lower(SearchBox.Text)
+
+	for _, PlayerAlvo in ipairs(Players:GetPlayers()) do
+
+		if PlayerAlvo ~= Player then
+
+			local Nome = string.lower(PlayerAlvo.Name)
+			local DisplayName =
+				string.lower(PlayerAlvo.DisplayName)
+
+			if Pesquisa == ""
+				or string.find(Nome, Pesquisa, 1, true)
+				or string.find(DisplayName, Pesquisa, 1, true) then
+
+				CriarPlayerButton(PlayerAlvo)
+			end
+		end
+	end
+end
+
+--========================================================
+-- PESQUISA EM TEMPO REAL
+--========================================================
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	AtualizarLista()
+end)
+
+--========================================================
+-- PLAYER ENTROU
+--========================================================
+
+Players.PlayerAdded:Connect(function()
+
+	task.wait(0.1)
+
+	AtualizarLista()
+end)
+
+--========================================================
+-- PLAYER SAIU
+--========================================================
+
+Players.PlayerRemoving:Connect(function(PlayerAlvo)
+
+	if JogadorSelecionado == PlayerAlvo then
+
+		JogadorSelecionado = nil
+
+		SelectedLabel.Text =
+			"Nenhum jogador selecionado"
+	end
+
+	task.wait(0.1)
+
+	AtualizarLista()
+end)
 
 --========================================================
 -- TP
@@ -760,558 +825,135 @@ end
 
 TPButton.MouseButton1Click:Connect(function()
 
-	if not SelectedPlayer then
+	if not JogadorSelecionado then
+
+		SelectedLabel.Text =
+			"⚠ Selecione um jogador primeiro!"
+
 		return
 	end
 
-	local myChar = LP.Character
-	local targetChar = SelectedPlayer.Character
+	if not JogadorSelecionado.Character then
 
-	if not myChar or not targetChar then
+		SelectedLabel.Text =
+			"⚠ O jogador não possui personagem!"
+
 		return
 	end
 
-	local myRoot = myChar:FindFirstChild("HumanoidRootPart")
-	local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+	local TargetRoot =
+		JogadorSelecionado.Character:
+		FindFirstChild("HumanoidRootPart")
 
-	if myRoot and targetRoot then
+	if not TargetRoot then
 
-		myRoot.CFrame =
-			targetRoot.CFrame *
-			CFrame.new(3,0,0)
+		SelectedLabel.Text =
+			"⚠ Não foi possível encontrar o jogador!"
 
+		return
 	end
 
+	if not RootPart then
+		AtualizarCharacter()
+	end
+
+	RootPart.CFrame =
+		TargetRoot.CFrame *
+		CFrame.new(0, 0, 3)
+
+	SelectedLabel.Text =
+		"TP realizado: " ..
+		JogadorSelecionado.DisplayName
 end)
 
 --========================================================
--- PUXAR
+-- TROCAR ABAS
 --========================================================
 
-PullButton.MouseButton1Click:Connect(function()
+MainTab.MouseButton1Click:Connect(function()
 
-	if not SelectedPlayer then
-		return
-	end
+	FuncoesPage.Visible = true
+	TPPage.Visible = false
 
-	local myChar = LP.Character
-	local targetChar = SelectedPlayer.Character
+	MainTab.BackgroundColor3 =
+		Color3.fromRGB(0, 130, 70)
 
-	if not myChar or not targetChar then
-		return
-	end
+	TPTab.BackgroundColor3 =
+		Color3.fromRGB(40, 40, 40)
+end)
 
-	local myRoot = myChar:FindFirstChild("HumanoidRootPart")
-	local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+TPTab.MouseButton1Click:Connect(function()
 
-	if myRoot and targetRoot then
+	FuncoesPage.Visible = false
+	TPPage.Visible = true
 
-		-- Tentativa local para jogos onde o cliente
-		-- possui a network ownership necessária.
-		targetRoot.CFrame =
-			myRoot.CFrame *
-			CFrame.new(3,0,0)
+	MainTab.BackgroundColor3 =
+		Color3.fromRGB(40, 40, 40)
 
-	end
+	TPTab.BackgroundColor3 =
+		Color3.fromRGB(0, 130, 70)
 
+	AtualizarLista()
 end)
 
 --========================================================
--- FLY
+-- DRAG DO PAINEL
 --========================================================
 
-local FlyConnection
+local Arrastando = false
+local Inicio
+local PosicaoInicial
 
-local function EnableFly()
+Title.InputBegan:Connect(function(Input)
 
-	Fly = true
+	if Input.UserInputType == Enum.UserInputType.MouseButton1
+		or Input.UserInputType == Enum.UserInputType.Touch then
 
-	SetButton(FlyButton,"✈ FLY",true)
-
-	if FlyConnection then
-		FlyConnection:Disconnect()
+		Arrastando = true
+		Inicio = Input.Position
+		PosicaoInicial = Main.Position
 	end
-
-	FlyConnection =
-		RunService.RenderStepped:Connect(function()
-
-			if not Fly then
-				return
-			end
-
-			local char = LP.Character
-
-			if not char then
-				return
-			end
-
-			local humanoid =
-				char:FindFirstChildOfClass("Humanoid")
-
-			local root =
-				char:FindFirstChild("HumanoidRootPart")
-
-			if not humanoid or not root then
-				return
-			end
-
-			local camera =
-				workspace.CurrentCamera
-
-			local direction = Vector3.zero
-
-			if UIS:IsKeyDown(Enum.KeyCode.W) then
-				direction += camera.CFrame.LookVector
-			end
-
-			if UIS:IsKeyDown(Enum.KeyCode.S) then
-				direction -= camera.CFrame.LookVector
-			end
-
-			if UIS:IsKeyDown(Enum.KeyCode.A) then
-				direction -= camera.CFrame.RightVector
-			end
-
-			if UIS:IsKeyDown(Enum.KeyCode.D) then
-				direction += camera.CFrame.RightVector
-			end
-
-			if UIS:IsKeyDown(Enum.KeyCode.Space) then
-				direction += Vector3.yAxis
-			end
-
-			if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then
-				direction -= Vector3.yAxis
-			end
-
-			if direction.Magnitude > 0 then
-
-				root.AssemblyLinearVelocity =
-					direction.Unit * Speed
-
-			else
-
-				root.AssemblyLinearVelocity =
-					Vector3.zero
-
-			end
-
-			humanoid.AutoRotate = false
-
-		end)
-
-end
-
-local function DisableFly()
-
-	Fly = false
-
-	SetButton(FlyButton,"✈ FLY",false)
-
-	if FlyConnection then
-
-		FlyConnection:Disconnect()
-		FlyConnection = nil
-
-	end
-
-	local char = LP.Character
-
-	if char then
-
-		local humanoid =
-			char:FindFirstChildOfClass("Humanoid")
-
-		local root =
-			char:FindFirstChild("HumanoidRootPart")
-
-		if humanoid then
-			humanoid.AutoRotate = true
-		end
-
-		if root then
-			root.AssemblyLinearVelocity =
-				Vector3.zero
-		end
-
-	end
-
-end
-
-FlyButton.MouseButton1Click:Connect(function()
-
-	if Fly then
-		DisableFly()
-	else
-		EnableFly()
-	end
-
 end)
 
---========================================================
--- INVISIBILIDADE
---========================================================
+UserInputService.InputChanged:Connect(function(Input)
 
-local function ApplyInvisible()
-
-	local char = LP.Character
-
-	if not char then
+	if not Arrastando then
 		return
 	end
 
-	for _,obj in ipairs(char:GetDescendants()) do
-
-		if obj:IsA("BasePart") then
-
-			obj.LocalTransparencyModifier =
-				Invis and 1 or 0
-
-		elseif obj:IsA("Decal") then
-
-			obj.Transparency =
-				Invis and 1 or 0
-
-		end
-
+	if Input.UserInputType ~= Enum.UserInputType.MouseMovement
+		and Input.UserInputType ~= Enum.UserInputType.Touch then
+		return
 	end
 
-end
+	local Delta = Input.Position - Inicio
 
-InvisButton.MouseButton1Click:Connect(function()
-
-	Invis = not Invis
-
-	SetButton(
-		InvisButton,
-		"👻 INVISÍVEL",
-		Invis
+	Main.Position = UDim2.new(
+		PosicaoInicial.X.Scale,
+		PosicaoInicial.X.Offset + Delta.X,
+		PosicaoInicial.Y.Scale,
+		PosicaoInicial.Y.Offset + Delta.Y
 	)
-
-	ApplyInvisible()
-
 end)
 
-LP.CharacterAdded:Connect(function(character)
+UserInputService.InputEnded:Connect(function(Input)
 
-	character:WaitForChild("HumanoidRootPart")
+	if Input.UserInputType == Enum.UserInputType.MouseButton1
+		or Input.UserInputType == Enum.UserInputType.Touch then
 
-	task.wait(0.2)
-
-	if Invis then
-		ApplyInvisible()
+		Arrastando = false
 	end
-
-end)
-
---========================================================
--- ESP
---========================================================
-
-local function RemoveESP(player)
-
-	local data = ESPData[player]
-
-	if not data then
-		return
-	end
-
-	for _,obj in ipairs(data) do
-
-		if obj and obj.Parent then
-			obj:Destroy()
-		end
-
-	end
-
-	ESPData[player] = nil
-
-end
-
-local function CreateESP(player)
-
-	if player == LP then
-		return
-	end
-
-	RemoveESP(player)
-
-	local char = player.Character
-
-	if not char then
-		return
-	end
-
-	local highlight = Instance.new("Highlight")
-
-	highlight.Name = "MurderESP"
-	highlight.FillTransparency = 0.65
-	highlight.OutlineTransparency = 0
-
-	highlight.Adornee = char
-	highlight.Parent = char
-
-	local billboard
-
-	local head = char:FindFirstChild("Head")
-
-	if head then
-
-		billboard =
-			Instance.new("BillboardGui")
-
-		billboard.Name = "MurderName"
-
-		billboard.Size =
-			UDim2.fromOffset(180,40)
-
-		billboard.StudsOffset =
-			Vector3.new(0,3,0)
-
-		billboard.AlwaysOnTop = true
-		billboard.Adornee = head
-		billboard.Parent = char
-
-		local label =
-			Instance.new("TextLabel")
-
-		label.Size =
-			UDim2.fromScale(1,1)
-
-		label.BackgroundTransparency = 1
-
-		label.Text =
-			player.DisplayName ..
-			"\n@" ..
-			player.Name
-
-		label.TextColor3 =
-			Color3.fromRGB(255,255,255)
-
-		label.TextStrokeTransparency = 0
-
-		label.TextSize = 13
-		label.Font = Enum.Font.GothamBold
-
-		label.Parent = billboard
-
-	end
-
-	ESPData[player] = {
-		highlight,
-		billboard
-	}
-
-end
-
-local function UpdateESP()
-
-	if not ESP then
-
-		for player in pairs(ESPData) do
-			RemoveESP(player)
-		end
-
-		return
-
-	end
-
-	for _,player in ipairs(Players:GetPlayers()) do
-
-		if player ~= LP then
-			CreateESP(player)
-		end
-
-	end
-
-end
-
-ESPButton.MouseButton1Click:Connect(function()
-
-	ESP = not ESP
-
-	SetButton(
-		ESPButton,
-		"👁 ESP",
-		ESP
-	)
-
-	UpdateESP()
-
-end)
-
---========================================================
--- ROLES LOCAIS
---========================================================
-
-local function ShowRole()
-
-	local name = SelectedPlayer
-		and SelectedPlayer.DisplayName
-		or LP.DisplayName
-
-	ResultText.Text =
-		"🎭 ROLE\n\n" ..
-		"👤 " .. name ..
-		"\n\n" ..
-		"ROLE ESCOLHIDA:\n" ..
-		string.upper(LocalRole) ..
-		"\n\n" ..
-		"⚠ Escolha local."
-
-end
-
-RandomRole.MouseButton1Click:Connect(function()
-
-	if math.random(1,2) == 1 then
-		LocalRole = "Assassino"
-	else
-		LocalRole = "Xerife"
-	end
-
-	ShowRole()
-
-end)
-
-AssassinRole.MouseButton1Click:Connect(function()
-
-	LocalRole = "Assassino"
-
-	ShowRole()
-
-end)
-
-SheriffRole.MouseButton1Click:Connect(function()
-
-	LocalRole = "Xerife"
-
-	ShowRole()
-
-end)
-
-InnocentRole.MouseButton1Click:Connect(function()
-
-	LocalRole = "Inocente"
-
-	ShowRole()
-
-end)
-
-RefreshItems.MouseButton1Click:Connect(function()
-	InvestigatePlayer()
-end)
-
---========================================================
--- PESQUISA
---========================================================
-
-SearchPlayers:GetPropertyChangedSignal("Text"):Connect(
-	UpdatePlayerList
-)
-
-SearchInvestigate:GetPropertyChangedSignal("Text"):Connect(
-	UpdateInvestigateList
-)
-
---========================================================
--- ABAS
---========================================================
-
-local function ShowTab(tab)
-
-	Functions.Visible =
-		tab == "FUNCTIONS"
-
-	PlayersFrame.Visible =
-		tab == "PLAYERS"
-
-	Investigate.Visible =
-		tab == "INVESTIGATE"
-
-end
-
-FunctionsTab.MouseButton1Click:Connect(function()
-	ShowTab("FUNCTIONS")
-end)
-
-PlayersTab.MouseButton1Click:Connect(function()
-	ShowTab("PLAYERS")
-end)
-
-InvestigateTab.MouseButton1Click:Connect(function()
-	ShowTab("INVESTIGATE")
-end)
-
---========================================================
--- PLAYERS
---========================================================
-
-Players.PlayerAdded:Connect(function(player)
-
-	player.CharacterAdded:Connect(function()
-
-		task.wait(1)
-
-		if ESP then
-			CreateESP(player)
-		end
-
-	end)
-
-	task.wait(0.2)
-
-	UpdatePlayerList()
-	UpdateInvestigateList()
-
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-
-	RemoveESP(player)
-
-	if SelectedPlayer == player then
-
-		SelectedPlayer = nil
-
-		ResultText.Text =
-			"🔍\n\nO jogador saiu."
-
-	end
-
-	task.wait()
-
-	UpdatePlayerList()
-	UpdateInvestigateList()
-
-end)
-
---========================================================
--- ABRIR / FECHAR
---========================================================
-
-Close.MouseButton1Click:Connect(function()
-
-	Main.Visible = false
-	OpenButton.Visible = true
-
-end)
-
-OpenButton.MouseButton1Click:Connect(function()
-
-	Main.Visible = true
-	OpenButton.Visible = false
-
 end)
 
 --========================================================
 -- INICIALIZAÇÃO
 --========================================================
 
-ShowTab("FUNCTIONS")
+MainTab.BackgroundColor3 =
+	Color3.fromRGB(0, 130, 70)
 
-UpdatePlayerList()
-UpdateInvestigateList()
+AtualizarLista()
 
-SetButton(FlyButton,"✈ FLY",false)
-SetButton(InvisButton,"👻 INVISÍVEL",false)
-SetButton(ESPButton,"👁 ESP",false)
+--========================================================
+-- FIM
+--========================================================
