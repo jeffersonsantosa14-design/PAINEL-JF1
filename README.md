@@ -1,34 +1,40 @@
+```lua
 --========================================================
 -- MURDER PANEL
--- FLY + INVISIBLE + ESP + TP PLAYER
--- UM ÚNICO LOCALSCRIPT
+-- FLY + INVISIBLE + ESP + TP PLAYER + PUXAR PLAYER
 --
--- COLOQUE EM:
--- StarterPlayer
---   > StarterPlayerScripts
---
+-- LOCAL SCRIPT
+-- StarterPlayer > StarterPlayerScripts
 --========================================================
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Player = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 --========================================================
--- CONFIGURAÇÕES
+-- REMOTE
 --========================================================
+
+local RemoteFolder = ReplicatedStorage:WaitForChild("MurderPanelRemotes")
+local TPRemote = RemoteFolder:WaitForChild("TPPlayer")
+
+--========================================================
+-- VARIÁVEIS
+--========================================================
+
+local Character
+local Humanoid
+local RootPart
 
 local FlyAtivo = false
 local InvisibleAtivo = false
 local ESPAtivo = false
 
 local FlySpeed = 60
-
-local Character
-local Humanoid
-local RootPart
 
 local FlyConnection
 local FlyVelocity
@@ -56,12 +62,9 @@ Player.CharacterAdded:Connect(function()
 	AtualizarCharacter()
 
 	if InvisibleAtivo then
-		task.wait(0.2)
-
 		for _, obj in ipairs(Character:GetDescendants()) do
 			if obj:IsA("BasePart") then
 				obj.LocalTransparencyModifier = 1
-
 			elseif obj:IsA("Decal") then
 				obj.Transparency = 1
 			end
@@ -70,17 +73,13 @@ Player.CharacterAdded:Connect(function()
 end)
 
 --========================================================
--- GUI PRINCIPAL
+-- GUI
 --========================================================
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MurderPanel"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
-
---========================================================
--- PAINEL
---========================================================
 
 local Main = Instance.new("Frame")
 Main.Name = "Main"
@@ -104,8 +103,7 @@ MainStroke.Parent = Main
 --========================================================
 
 local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Size = UDim2.new(1, -50, 0, 45)
+Title.Size = UDim2.new(1, -60, 0, 45)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "☠  MURDER PANEL"
@@ -134,7 +132,7 @@ CloseCorner.CornerRadius = UDim.new(0, 7)
 CloseCorner.Parent = Close
 
 --========================================================
--- BOTÃO ABRIR
+-- ABRIR
 --========================================================
 
 local OpenButton = Instance.new("TextButton")
@@ -163,7 +161,7 @@ OpenButton.MouseButton1Click:Connect(function()
 end)
 
 --========================================================
--- SISTEMA DE ABAS
+-- ABAS
 --========================================================
 
 local TabArea = Instance.new("Frame")
@@ -177,13 +175,11 @@ local function CriarAba(Texto, Posicao)
 
 	Button.Size = UDim2.new(0, 125, 1, 0)
 	Button.Position = Posicao
-
 	Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	Button.Text = Texto
 	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
 	Button.TextSize = 15
 	Button.Font = Enum.Font.GothamBold
-
 	Button.Parent = TabArea
 
 	local Corner = Instance.new("UICorner")
@@ -208,30 +204,22 @@ local TPTab = CriarAba(
 --========================================================
 
 local FuncoesPage = Instance.new("Frame")
-FuncoesPage.Name = "FuncoesPage"
 FuncoesPage.Size = UDim2.new(1, -20, 1, -100)
 FuncoesPage.Position = UDim2.new(0, 10, 0, 95)
 FuncoesPage.BackgroundTransparency = 1
 FuncoesPage.Parent = Main
-
---========================================================
--- BOTÕES DE FUNÇÃO
---========================================================
 
 local function CriarBotao(Nome, Posicao)
 	local Button = Instance.new("TextButton")
 
 	Button.Size = UDim2.new(1, 0, 0, 55)
 	Button.Position = Posicao
-
 	Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	Button.BorderSizePixel = 0
-
 	Button.Text = Nome .. "  [OFF]"
 	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
 	Button.TextSize = 17
 	Button.Font = Enum.Font.GothamBold
-
 	Button.Parent = FuncoesPage
 
 	local Corner = Instance.new("UICorner")
@@ -294,11 +282,10 @@ local function IniciarFly()
 	end
 
 	FlyAtivo = true
-
 	Humanoid.PlatformStand = true
 
 	FlyVelocity = Instance.new("BodyVelocity")
-	FlyVelocity.Name = "JF_FlyVelocity"
+	FlyVelocity.Name = "MurderFlyVelocity"
 	FlyVelocity.MaxForce = Vector3.new(
 		math.huge,
 		math.huge,
@@ -308,7 +295,7 @@ local function IniciarFly()
 	FlyVelocity.Parent = RootPart
 
 	FlyGyro = Instance.new("BodyGyro")
-	FlyGyro.Name = "JF_FlyGyro"
+	FlyGyro.Name = "MurderFlyGyro"
 	FlyGyro.MaxTorque = Vector3.new(
 		math.huge,
 		math.huge,
@@ -502,14 +489,14 @@ local function CriarESP(PlayerAlvo)
 	RemoverESP(PlayerAlvo)
 
 	local Highlight = Instance.new("Highlight")
-	Highlight.Name = "JF_ESP"
+	Highlight.Name = "MurderESP"
 	Highlight.FillTransparency = 0.65
 	Highlight.OutlineTransparency = 0
 	Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 	Highlight.Parent = Char
 
 	local Billboard = Instance.new("BillboardGui")
-	Billboard.Name = "JF_ESP_Nome"
+	Billboard.Name = "MurderESP_Nome"
 	Billboard.Size = UDim2.new(0, 170, 0, 35)
 	Billboard.StudsOffset = Vector3.new(0, 3, 0)
 	Billboard.AlwaysOnTop = true
@@ -585,11 +572,10 @@ Players.PlayerRemoving:Connect(function(PlayerAlvo)
 end)
 
 --========================================================
--- PÁGINA TP PLAYER
+-- PÁGINA TP
 --========================================================
 
 local TPPage = Instance.new("Frame")
-TPPage.Name = "TPPage"
 TPPage.Size = UDim2.new(1, -20, 1, -100)
 TPPage.Position = UDim2.new(0, 10, 0, 95)
 TPPage.BackgroundTransparency = 1
@@ -601,21 +587,16 @@ TPPage.Parent = Main
 --========================================================
 
 local SearchBox = Instance.new("TextBox")
-SearchBox.Name = "Pesquisa"
-SearchBox.Size = UDim2.new(1, 0, 0, 42)
+SearchBox.Size = UDim2.new(1, 0, 0, 40)
 SearchBox.Position = UDim2.new(0, 0, 0, 0)
-
 SearchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 SearchBox.BorderSizePixel = 0
-
 SearchBox.PlaceholderText = "🔎 Pesquisar jogador..."
 SearchBox.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
-
 SearchBox.Text = ""
 SearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 SearchBox.TextSize = 15
 SearchBox.Font = Enum.Font.Gotham
-
 SearchBox.ClearTextOnFocus = false
 SearchBox.Parent = TPPage
 
@@ -624,12 +605,12 @@ SearchCorner.CornerRadius = UDim.new(0, 7)
 SearchCorner.Parent = SearchBox
 
 --========================================================
--- JOGADOR SELECIONADO
+-- SELECIONADO
 --========================================================
 
 local SelectedLabel = Instance.new("TextLabel")
-SelectedLabel.Size = UDim2.new(1, 0, 0, 30)
-SelectedLabel.Position = UDim2.new(0, 0, 0, 48)
+SelectedLabel.Size = UDim2.new(1, 0, 0, 28)
+SelectedLabel.Position = UDim2.new(0, 0, 0, 45)
 SelectedLabel.BackgroundTransparency = 1
 SelectedLabel.Text = "Nenhum jogador selecionado"
 SelectedLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
@@ -643,17 +624,13 @@ SelectedLabel.Parent = TPPage
 --========================================================
 
 local PlayerList = Instance.new("ScrollingFrame")
-PlayerList.Name = "PlayerList"
-PlayerList.Size = UDim2.new(1, 0, 1, -145)
-PlayerList.Position = UDim2.new(0, 0, 0, 82)
-
+PlayerList.Size = UDim2.new(1, 0, 1, -190)
+PlayerList.Position = UDim2.new(0, 0, 0, 78)
 PlayerList.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 PlayerList.BorderSizePixel = 0
-
 PlayerList.ScrollBarThickness = 5
 PlayerList.CanvasSize = UDim2.new(0, 0, 0, 0)
 PlayerList.AutomaticCanvasSize = Enum.AutomaticSize.Y
-
 PlayerList.Parent = TPPage
 
 local ListCorner = Instance.new("UICorner")
@@ -677,18 +654,14 @@ ListPadding.Parent = PlayerList
 --========================================================
 
 local TPButton = Instance.new("TextButton")
-TPButton.Name = "TPButton"
-TPButton.Size = UDim2.new(1, 0, 0, 50)
-TPButton.Position = UDim2.new(0, 0, 1, -55)
-
-TPButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+TPButton.Size = UDim2.new(1, 0, 0, 45)
+TPButton.Position = UDim2.new(0, 0, 1, -105)
+TPButton.BackgroundColor3 = Color3.fromRGB(0, 100, 160)
 TPButton.BorderSizePixel = 0
-
 TPButton.Text = "📍 DAR TP NO JOGADOR"
 TPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-TPButton.TextSize = 16
+TPButton.TextSize = 15
 TPButton.Font = Enum.Font.GothamBold
-
 TPButton.Parent = TPPage
 
 local TPCorner = Instance.new("UICorner")
@@ -696,7 +669,26 @@ TPCorner.CornerRadius = UDim.new(0, 7)
 TPCorner.Parent = TPButton
 
 --========================================================
--- CRIAR BOTÃO DO PLAYER
+-- BOTÃO PUXAR
+--========================================================
+
+local PullButton = Instance.new("TextButton")
+PullButton.Size = UDim2.new(1, 0, 0, 45)
+PullButton.Position = UDim2.new(0, 0, 1, -52)
+PullButton.BackgroundColor3 = Color3.fromRGB(130, 70, 0)
+PullButton.BorderSizePixel = 0
+PullButton.Text = "🧲 PUXAR PLAYER ATÉ MIM"
+PullButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+PullButton.TextSize = 15
+PullButton.Font = Enum.Font.GothamBold
+PullButton.Parent = TPPage
+
+local PullCorner = Instance.new("UICorner")
+PullCorner.CornerRadius = UDim.new(0, 7)
+PullCorner.Parent = PullButton
+
+--========================================================
+-- CRIAR PLAYER NA LISTA
 --========================================================
 
 local function CriarPlayerButton(PlayerAlvo)
@@ -705,7 +697,6 @@ local function CriarPlayerButton(PlayerAlvo)
 
 	Button.Name = PlayerAlvo.Name
 	Button.Size = UDim2.new(1, -2, 0, 42)
-
 	Button.BackgroundColor3 = Color3.fromRGB(42, 42, 42)
 	Button.BorderSizePixel = 0
 
@@ -717,7 +708,6 @@ local function CriarPlayerButton(PlayerAlvo)
 	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
 	Button.TextSize = 14
 	Button.Font = Enum.Font.Gotham
-
 	Button.Parent = PlayerList
 
 	local Corner = Instance.new("UICorner")
@@ -781,46 +771,28 @@ local function AtualizarLista()
 	end
 end
 
---========================================================
--- PESQUISA EM TEMPO REAL
---========================================================
-
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 	AtualizarLista()
 end)
 
---========================================================
--- PLAYER ENTROU
---========================================================
-
 Players.PlayerAdded:Connect(function()
-
 	task.wait(0.1)
-
 	AtualizarLista()
 end)
-
---========================================================
--- PLAYER SAIU
---========================================================
 
 Players.PlayerRemoving:Connect(function(PlayerAlvo)
 
 	if JogadorSelecionado == PlayerAlvo then
-
 		JogadorSelecionado = nil
-
-		SelectedLabel.Text =
-			"Nenhum jogador selecionado"
+		SelectedLabel.Text = "Nenhum jogador selecionado"
 	end
 
 	task.wait(0.1)
-
 	AtualizarLista()
 end)
 
 --========================================================
--- TP
+-- DAR TP NO PLAYER
 --========================================================
 
 TPButton.MouseButton1Click:Connect(function()
@@ -833,37 +805,56 @@ TPButton.MouseButton1Click:Connect(function()
 		return
 	end
 
-	if not JogadorSelecionado.Character then
+	if JogadorSelecionado == Player then
+		return
+	end
+
+	TPRemote:FireServer(
+		"TP",
+		JogadorSelecionado
+	)
+end)
+
+--========================================================
+-- PUXAR PLAYER
+--========================================================
+
+PullButton.MouseButton1Click:Connect(function()
+
+	if not JogadorSelecionado then
 
 		SelectedLabel.Text =
-			"⚠ O jogador não possui personagem!"
+			"⚠ Selecione um jogador primeiro!"
 
 		return
 	end
 
-	local TargetRoot =
-		JogadorSelecionado.Character:
-		FindFirstChild("HumanoidRootPart")
-
-	if not TargetRoot then
-
-		SelectedLabel.Text =
-			"⚠ Não foi possível encontrar o jogador!"
-
+	if JogadorSelecionado == Player then
 		return
 	end
 
-	if not RootPart then
-		AtualizarCharacter()
+	TPRemote:FireServer(
+		"PULL",
+		JogadorSelecionado
+	)
+end)
+
+--========================================================
+-- RETORNO DO SERVIDOR
+--========================================================
+
+TPRemote.OnClientEvent:Connect(function(Sucesso, Mensagem)
+
+	if Sucesso then
+
+		SelectedLabel.Text =
+			"✓ " .. tostring(Mensagem)
+
+	else
+
+		SelectedLabel.Text =
+			"⚠ " .. tostring(Mensagem)
 	end
-
-	RootPart.CFrame =
-		TargetRoot.CFrame *
-		CFrame.new(0, 0, 3)
-
-	SelectedLabel.Text =
-		"TP realizado: " ..
-		JogadorSelecionado.DisplayName
 end)
 
 --========================================================
@@ -897,7 +888,7 @@ TPTab.MouseButton1Click:Connect(function()
 end)
 
 --========================================================
--- DRAG DO PAINEL
+-- ARRASTAR PAINEL
 --========================================================
 
 local Arrastando = false
@@ -957,3 +948,4 @@ AtualizarLista()
 --========================================================
 -- FIM
 --========================================================
+```
