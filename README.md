@@ -1,8 +1,12 @@
-```lua
 --========================================================
--- PAINEL FLY + INVISIBLE + ESP
--- PARA USAR NO SEU PRÓPRIO JOGO
--- LocalScript em StarterPlayer > StarterPlayerScripts
+-- MURDER PANEL
+-- FLY + INVISIBLE + ESP + TP PLAYER
+-- UM ÚNICO LOCALSCRIPT
+--
+-- COLOQUE EM:
+-- StarterPlayer
+--   > StarterPlayerScripts
+--
 --========================================================
 
 local Players = game:GetService("Players")
@@ -32,6 +36,8 @@ local FlyGyro
 
 local ESPs = {}
 
+local JogadorSelecionado = nil
+
 --========================================================
 -- CHARACTER
 --========================================================
@@ -46,6 +52,7 @@ AtualizarCharacter()
 
 Player.CharacterAdded:Connect(function()
 	task.wait(1)
+
 	AtualizarCharacter()
 
 	if InvisibleAtivo then
@@ -54,6 +61,7 @@ Player.CharacterAdded:Connect(function()
 		for _, obj in ipairs(Character:GetDescendants()) do
 			if obj:IsA("BasePart") then
 				obj.LocalTransparencyModifier = 1
+
 			elseif obj:IsA("Decal") then
 				obj.Transparency = 1
 			end
@@ -62,85 +70,190 @@ Player.CharacterAdded:Connect(function()
 end)
 
 --========================================================
--- GUI
+-- GUI PRINCIPAL
 --========================================================
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "JF_MurderPainel"
+ScreenGui.Name = "MurderPanel"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 
+--========================================================
+-- PAINEL
+--========================================================
+
 local Main = Instance.new("Frame")
 Main.Name = "Main"
-Main.Size = UDim2.new(0, 300, 0, 250)
-Main.Position = UDim2.new(0.5, -150, 0.5, -125)
-Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Main.Size = UDim2.new(0, 420, 0, 430)
+Main.Position = UDim2.new(0.5, -210, 0.5, -215)
+Main.BackgroundColor3 = Color3.fromRGB(23, 23, 23)
 Main.BorderSizePixel = 0
 Main.Parent = ScreenGui
 
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 10)
-Corner.Parent = Main
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = Main
 
-local Stroke = Instance.new("UIStroke")
-Stroke.Color = Color3.fromRGB(70, 70, 70)
-Stroke.Thickness = 2
-Stroke.Parent = Main
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(70, 70, 70)
+MainStroke.Thickness = 2
+MainStroke.Parent = Main
 
 --========================================================
 -- TÍTULO
 --========================================================
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 45)
+Title.Name = "Title"
+Title.Size = UDim2.new(1, -50, 0, 45)
+Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "☠  MURDER PANEL"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 22
 Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Main
 
 --========================================================
--- FUNÇÃO BOTÃO
+-- FECHAR
 --========================================================
 
-local function CriarBotao(nome, posicao)
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.new(0, 32, 0, 32)
+Close.Position = UDim2.new(1, -40, 0, 7)
+Close.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
+Close.Text = "X"
+Close.TextColor3 = Color3.fromRGB(255, 255, 255)
+Close.TextSize = 16
+Close.Font = Enum.Font.GothamBold
+Close.Parent = Main
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 7)
+CloseCorner.Parent = Close
+
+--========================================================
+-- BOTÃO ABRIR
+--========================================================
+
+local OpenButton = Instance.new("TextButton")
+OpenButton.Size = UDim2.new(0, 55, 0, 55)
+OpenButton.Position = UDim2.new(0, 15, 0.5, -27)
+OpenButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+OpenButton.Text = "☠"
+OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenButton.TextSize = 24
+OpenButton.Font = Enum.Font.GothamBold
+OpenButton.Visible = false
+OpenButton.Parent = ScreenGui
+
+local OpenCorner = Instance.new("UICorner")
+OpenCorner.CornerRadius = UDim.new(1, 0)
+OpenCorner.Parent = OpenButton
+
+Close.MouseButton1Click:Connect(function()
+	Main.Visible = false
+	OpenButton.Visible = true
+end)
+
+OpenButton.MouseButton1Click:Connect(function()
+	Main.Visible = true
+	OpenButton.Visible = false
+end)
+
+--========================================================
+-- SISTEMA DE ABAS
+--========================================================
+
+local TabArea = Instance.new("Frame")
+TabArea.Size = UDim2.new(1, -20, 0, 40)
+TabArea.Position = UDim2.new(0, 10, 0, 48)
+TabArea.BackgroundTransparency = 1
+TabArea.Parent = Main
+
+local function CriarAba(Texto, Posicao)
 	local Button = Instance.new("TextButton")
 
-	Button.Size = UDim2.new(1, -30, 0, 48)
-	Button.Position = posicao
+	Button.Size = UDim2.new(0, 125, 1, 0)
+	Button.Position = Posicao
+
+	Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	Button.Text = Texto
+	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Button.TextSize = 15
+	Button.Font = Enum.Font.GothamBold
+
+	Button.Parent = TabArea
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 7)
+	Corner.Parent = Button
+
+	return Button
+end
+
+local MainTab = CriarAba(
+	"⚙ FUNÇÕES",
+	UDim2.new(0, 0, 0, 0)
+)
+
+local TPTab = CriarAba(
+	"👤 TP PLAYER",
+	UDim2.new(0, 135, 0, 0)
+)
+
+--========================================================
+-- PÁGINA FUNÇÕES
+--========================================================
+
+local FuncoesPage = Instance.new("Frame")
+FuncoesPage.Name = "FuncoesPage"
+FuncoesPage.Size = UDim2.new(1, -20, 1, -100)
+FuncoesPage.Position = UDim2.new(0, 10, 0, 95)
+FuncoesPage.BackgroundTransparency = 1
+FuncoesPage.Parent = Main
+
+--========================================================
+-- BOTÕES DE FUNÇÃO
+--========================================================
+
+local function CriarBotao(Nome, Posicao)
+	local Button = Instance.new("TextButton")
+
+	Button.Size = UDim2.new(1, 0, 0, 55)
+	Button.Position = Posicao
 
 	Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	Button.BorderSizePixel = 0
 
-	Button.Text = nome .. "  [OFF]"
+	Button.Text = Nome .. "  [OFF]"
 	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
 	Button.TextSize = 17
 	Button.Font = Enum.Font.GothamBold
 
-	Button.AutoButtonColor = true
-	Button.Parent = Main
+	Button.Parent = FuncoesPage
 
-	local C = Instance.new("UICorner")
-	C.CornerRadius = UDim.new(0, 7)
-	C.Parent = Button
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 7)
+	Corner.Parent = Button
 
 	return Button
 end
 
 local FlyButton = CriarBotao(
 	"✈️ FLY",
-	UDim2.new(0, 15, 0, 55)
+	UDim2.new(0, 0, 0, 10)
 )
 
 local InvisibleButton = CriarBotao(
 	"👻 INVISIBLE",
-	UDim2.new(0, 15, 0, 110)
+	UDim2.new(0, 0, 0, 75)
 )
 
 local ESPButton = CriarBotao(
 	"👁 ESP",
-	UDim2.new(0, 15, 0, 165)
+	UDim2.new(0, 0, 0, 140)
 )
 
 --========================================================
@@ -148,6 +261,7 @@ local ESPButton = CriarBotao(
 --========================================================
 
 local function PararFly()
+
 	FlyAtivo = false
 
 	if FlyConnection then
@@ -174,6 +288,7 @@ local function PararFly()
 end
 
 local function IniciarFly()
+
 	if not Character or not RootPart or not Humanoid then
 		return
 	end
@@ -206,6 +321,7 @@ local function IniciarFly()
 	FlyButton.BackgroundColor3 = Color3.fromRGB(0, 130, 70)
 
 	FlyConnection = RunService.RenderStepped:Connect(function()
+
 		if not FlyAtivo then
 			return
 		end
@@ -245,12 +361,12 @@ local function IniciarFly()
 		end
 
 		FlyVelocity.Velocity = Direction * FlySpeed
-
 		FlyGyro.CFrame = Camera.CFrame
 	end)
 end
 
 FlyButton.MouseButton1Click:Connect(function()
+
 	if FlyAtivo then
 		PararFly()
 	else
@@ -258,16 +374,14 @@ FlyButton.MouseButton1Click:Connect(function()
 	end
 end)
 
---========================================================
--- TECLA F PARA FLY
---========================================================
-
 UserInputService.InputBegan:Connect(function(Input, Processed)
+
 	if Processed then
 		return
 	end
 
 	if Input.KeyCode == Enum.KeyCode.F then
+
 		if FlyAtivo then
 			PararFly()
 		else
@@ -281,6 +395,7 @@ end)
 --========================================================
 
 local function AplicarInvisible()
+
 	if not Character then
 		return
 	end
@@ -303,6 +418,7 @@ local function AplicarInvisible()
 end
 
 local function RemoverInvisible()
+
 	if not Character then
 		return
 	end
@@ -385,8 +501,6 @@ local function CriarESP(PlayerAlvo)
 
 	RemoverESP(PlayerAlvo)
 
-	-- HIGHLIGHT
-
 	local Highlight = Instance.new("Highlight")
 	Highlight.Name = "JF_ESP"
 	Highlight.FillTransparency = 0.65
@@ -394,11 +508,9 @@ local function CriarESP(PlayerAlvo)
 	Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 	Highlight.Parent = Char
 
-	-- NOME
-
 	local Billboard = Instance.new("BillboardGui")
 	Billboard.Name = "JF_ESP_Nome"
-	Billboard.Size = UDim2.new(0, 150, 0, 35)
+	Billboard.Size = UDim2.new(0, 170, 0, 35)
 	Billboard.StudsOffset = Vector3.new(0, 3, 0)
 	Billboard.AlwaysOnTop = true
 	Billboard.Parent = Root
@@ -428,14 +540,6 @@ local function AtualizarESP()
 			if PlayerAlvo.Character then
 				CriarESP(PlayerAlvo)
 			end
-
-			PlayerAlvo.CharacterAdded:Connect(function()
-				task.wait(0.5)
-
-				if ESPAtivo then
-					CriarESP(PlayerAlvo)
-				end
-			end)
 		end
 	end
 end
@@ -464,12 +568,336 @@ ESPButton.MouseButton1Click:Connect(function()
 	end
 end)
 
+Players.PlayerAdded:Connect(function(PlayerAlvo)
+
+	PlayerAlvo.CharacterAdded:Connect(function()
+
+		task.wait(0.5)
+
+		if ESPAtivo then
+			CriarESP(PlayerAlvo)
+		end
+	end)
+end)
+
 Players.PlayerRemoving:Connect(function(PlayerAlvo)
 	RemoverESP(PlayerAlvo)
 end)
 
 --========================================================
--- PAINEL ARRASTÁVEL
+-- PÁGINA TP PLAYER
+--========================================================
+
+local TPPage = Instance.new("Frame")
+TPPage.Name = "TPPage"
+TPPage.Size = UDim2.new(1, -20, 1, -100)
+TPPage.Position = UDim2.new(0, 10, 0, 95)
+TPPage.BackgroundTransparency = 1
+TPPage.Visible = false
+TPPage.Parent = Main
+
+--========================================================
+-- PESQUISA
+--========================================================
+
+local SearchBox = Instance.new("TextBox")
+SearchBox.Name = "Pesquisa"
+SearchBox.Size = UDim2.new(1, 0, 0, 42)
+SearchBox.Position = UDim2.new(0, 0, 0, 0)
+
+SearchBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SearchBox.BorderSizePixel = 0
+
+SearchBox.PlaceholderText = "🔎 Pesquisar jogador..."
+SearchBox.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
+
+SearchBox.Text = ""
+SearchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SearchBox.TextSize = 15
+SearchBox.Font = Enum.Font.Gotham
+
+SearchBox.ClearTextOnFocus = false
+SearchBox.Parent = TPPage
+
+local SearchCorner = Instance.new("UICorner")
+SearchCorner.CornerRadius = UDim.new(0, 7)
+SearchCorner.Parent = SearchBox
+
+--========================================================
+-- JOGADOR SELECIONADO
+--========================================================
+
+local SelectedLabel = Instance.new("TextLabel")
+SelectedLabel.Size = UDim2.new(1, 0, 0, 30)
+SelectedLabel.Position = UDim2.new(0, 0, 0, 48)
+SelectedLabel.BackgroundTransparency = 1
+SelectedLabel.Text = "Nenhum jogador selecionado"
+SelectedLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
+SelectedLabel.TextSize = 14
+SelectedLabel.Font = Enum.Font.Gotham
+SelectedLabel.TextXAlignment = Enum.TextXAlignment.Left
+SelectedLabel.Parent = TPPage
+
+--========================================================
+-- LISTA
+--========================================================
+
+local PlayerList = Instance.new("ScrollingFrame")
+PlayerList.Name = "PlayerList"
+PlayerList.Size = UDim2.new(1, 0, 1, -145)
+PlayerList.Position = UDim2.new(0, 0, 0, 82)
+
+PlayerList.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+PlayerList.BorderSizePixel = 0
+
+PlayerList.ScrollBarThickness = 5
+PlayerList.CanvasSize = UDim2.new(0, 0, 0, 0)
+PlayerList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+PlayerList.Parent = TPPage
+
+local ListCorner = Instance.new("UICorner")
+ListCorner.CornerRadius = UDim.new(0, 7)
+ListCorner.Parent = PlayerList
+
+local ListLayout = Instance.new("UIListLayout")
+ListLayout.Padding = UDim.new(0, 5)
+ListLayout.SortOrder = Enum.SortOrder.Name
+ListLayout.Parent = PlayerList
+
+local ListPadding = Instance.new("UIPadding")
+ListPadding.PaddingTop = UDim.new(0, 6)
+ListPadding.PaddingBottom = UDim.new(0, 6)
+ListPadding.PaddingLeft = UDim.new(0, 6)
+ListPadding.PaddingRight = UDim.new(0, 6)
+ListPadding.Parent = PlayerList
+
+--========================================================
+-- BOTÃO TP
+--========================================================
+
+local TPButton = Instance.new("TextButton")
+TPButton.Name = "TPButton"
+TPButton.Size = UDim2.new(1, 0, 0, 50)
+TPButton.Position = UDim2.new(0, 0, 1, -55)
+
+TPButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+TPButton.BorderSizePixel = 0
+
+TPButton.Text = "📍 DAR TP NO JOGADOR"
+TPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+TPButton.TextSize = 16
+TPButton.Font = Enum.Font.GothamBold
+
+TPButton.Parent = TPPage
+
+local TPCorner = Instance.new("UICorner")
+TPCorner.CornerRadius = UDim.new(0, 7)
+TPCorner.Parent = TPButton
+
+--========================================================
+-- CRIAR BOTÃO DO PLAYER
+--========================================================
+
+local function CriarPlayerButton(PlayerAlvo)
+
+	local Button = Instance.new("TextButton")
+
+	Button.Name = PlayerAlvo.Name
+	Button.Size = UDim2.new(1, -2, 0, 42)
+
+	Button.BackgroundColor3 = Color3.fromRGB(42, 42, 42)
+	Button.BorderSizePixel = 0
+
+	Button.Text =
+		PlayerAlvo.DisplayName ..
+		"  @" ..
+		PlayerAlvo.Name
+
+	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Button.TextSize = 14
+	Button.Font = Enum.Font.Gotham
+
+	Button.Parent = PlayerList
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 6)
+	Corner.Parent = Button
+
+	Button.MouseButton1Click:Connect(function()
+
+		JogadorSelecionado = PlayerAlvo
+
+		SelectedLabel.Text =
+			"Selecionado: " ..
+			PlayerAlvo.DisplayName ..
+			"  (@" ..
+			PlayerAlvo.Name ..
+			")"
+
+		for _, Outro in ipairs(PlayerList:GetChildren()) do
+
+			if Outro:IsA("TextButton") then
+				Outro.BackgroundColor3 =
+					Color3.fromRGB(42, 42, 42)
+			end
+		end
+
+		Button.BackgroundColor3 =
+			Color3.fromRGB(0, 130, 70)
+	end)
+end
+
+--========================================================
+-- ATUALIZAR LISTA
+--========================================================
+
+local function AtualizarLista()
+
+	for _, Obj in ipairs(PlayerList:GetChildren()) do
+
+		if Obj:IsA("TextButton") then
+			Obj:Destroy()
+		end
+	end
+
+	local Pesquisa = string.lower(SearchBox.Text)
+
+	for _, PlayerAlvo in ipairs(Players:GetPlayers()) do
+
+		if PlayerAlvo ~= Player then
+
+			local Nome = string.lower(PlayerAlvo.Name)
+			local DisplayName =
+				string.lower(PlayerAlvo.DisplayName)
+
+			if Pesquisa == ""
+				or string.find(Nome, Pesquisa, 1, true)
+				or string.find(DisplayName, Pesquisa, 1, true) then
+
+				CriarPlayerButton(PlayerAlvo)
+			end
+		end
+	end
+end
+
+--========================================================
+-- PESQUISA EM TEMPO REAL
+--========================================================
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	AtualizarLista()
+end)
+
+--========================================================
+-- PLAYER ENTROU
+--========================================================
+
+Players.PlayerAdded:Connect(function()
+
+	task.wait(0.1)
+
+	AtualizarLista()
+end)
+
+--========================================================
+-- PLAYER SAIU
+--========================================================
+
+Players.PlayerRemoving:Connect(function(PlayerAlvo)
+
+	if JogadorSelecionado == PlayerAlvo then
+
+		JogadorSelecionado = nil
+
+		SelectedLabel.Text =
+			"Nenhum jogador selecionado"
+	end
+
+	task.wait(0.1)
+
+	AtualizarLista()
+end)
+
+--========================================================
+-- TP
+--========================================================
+
+TPButton.MouseButton1Click:Connect(function()
+
+	if not JogadorSelecionado then
+
+		SelectedLabel.Text =
+			"⚠ Selecione um jogador primeiro!"
+
+		return
+	end
+
+	if not JogadorSelecionado.Character then
+
+		SelectedLabel.Text =
+			"⚠ O jogador não possui personagem!"
+
+		return
+	end
+
+	local TargetRoot =
+		JogadorSelecionado.Character:
+		FindFirstChild("HumanoidRootPart")
+
+	if not TargetRoot then
+
+		SelectedLabel.Text =
+			"⚠ Não foi possível encontrar o jogador!"
+
+		return
+	end
+
+	if not RootPart then
+		AtualizarCharacter()
+	end
+
+	RootPart.CFrame =
+		TargetRoot.CFrame *
+		CFrame.new(0, 0, 3)
+
+	SelectedLabel.Text =
+		"TP realizado: " ..
+		JogadorSelecionado.DisplayName
+end)
+
+--========================================================
+-- TROCAR ABAS
+--========================================================
+
+MainTab.MouseButton1Click:Connect(function()
+
+	FuncoesPage.Visible = true
+	TPPage.Visible = false
+
+	MainTab.BackgroundColor3 =
+		Color3.fromRGB(0, 130, 70)
+
+	TPTab.BackgroundColor3 =
+		Color3.fromRGB(40, 40, 40)
+end)
+
+TPTab.MouseButton1Click:Connect(function()
+
+	FuncoesPage.Visible = false
+	TPPage.Visible = true
+
+	MainTab.BackgroundColor3 =
+		Color3.fromRGB(40, 40, 40)
+
+	TPTab.BackgroundColor3 =
+		Color3.fromRGB(0, 130, 70)
+
+	AtualizarLista()
+end)
+
+--========================================================
+-- DRAG DO PAINEL
 --========================================================
 
 local Arrastando = false
@@ -484,24 +912,6 @@ Title.InputBegan:Connect(function(Input)
 		Arrastando = true
 		Inicio = Input.Position
 		PosicaoInicial = Main.Position
-	end
-end)
-
-Title.InputChanged:Connect(function(Input)
-
-	if Input.UserInputType == Enum.UserInputType.MouseMovement
-		or Input.UserInputType == Enum.UserInputType.Touch then
-
-		local Movimento = Input
-
-		Movimento.Changed:Connect(function()
-
-			if Movimento.UserInputState ==
-				Enum.UserInputState.End then
-
-				Arrastando = false
-			end
-		end)
 	end
 end)
 
@@ -526,58 +936,24 @@ UserInputService.InputChanged:Connect(function(Input)
 	)
 end)
 
---========================================================
--- BOTÃO FECHAR
---========================================================
+UserInputService.InputEnded:Connect(function(Input)
 
-local Close = Instance.new("TextButton")
-Close.Size = UDim2.new(0, 32, 0, 32)
-Close.Position = UDim2.new(1, -38, 0, 7)
-Close.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
-Close.Text = "X"
-Close.TextColor3 = Color3.fromRGB(255, 255, 255)
-Close.TextSize = 16
-Close.Font = Enum.Font.GothamBold
-Close.Parent = Main
+	if Input.UserInputType == Enum.UserInputType.MouseButton1
+		or Input.UserInputType == Enum.UserInputType.Touch then
 
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 7)
-CloseCorner.Parent = Close
-
-Close.MouseButton1Click:Connect(function()
-	Main.Visible = false
+		Arrastando = false
+	end
 end)
 
 --========================================================
--- BOTÃO ABRIR
+-- INICIALIZAÇÃO
 --========================================================
 
-local OpenButton = Instance.new("TextButton")
-OpenButton.Size = UDim2.new(0, 55, 0, 55)
-OpenButton.Position = UDim2.new(0, 15, 0.5, -27)
-OpenButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-OpenButton.Text = "☠"
-OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-OpenButton.TextSize = 24
-OpenButton.Font = Enum.Font.GothamBold
-OpenButton.Visible = false
-OpenButton.Parent = ScreenGui
+MainTab.BackgroundColor3 =
+	Color3.fromRGB(0, 130, 70)
 
-local OpenCorner = Instance.new("UICorner")
-OpenCorner.CornerRadius = UDim.new(1, 0)
-OpenCorner.Parent = OpenButton
-
-OpenButton.MouseButton1Click:Connect(function()
-	Main.Visible = true
-	OpenButton.Visible = false
-end)
-
-Close.MouseButton1Click:Connect(function()
-	Main.Visible = false
-	OpenButton.Visible = true
-end)
+AtualizarLista()
 
 --========================================================
 -- FIM
 --========================================================
-```
