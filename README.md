@@ -1,4 +1,3 @@
-```lua
 --========================================================
 -- 🔪 MURDER PANEL
 -- LOCAL SCRIPT ÚNICO
@@ -1351,4 +1350,3 @@ AtualizarBotao(
 	"👁 ESP",
 	false
 )
-```
